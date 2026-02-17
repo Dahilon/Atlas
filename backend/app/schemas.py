@@ -96,6 +96,13 @@ class MapCountryResponse(BaseModel):
     severity_index: Optional[float] = None
     risk_score: Optional[float] = None
     event_count: Optional[int] = None
+    # ML-enriched fields
+    risk_tier: Optional[str] = None
+    risk_percentile: Optional[float] = None
+    trend_7d: Optional[str] = None
+    trend_30d: Optional[str] = None
+    avg_sentiment: Optional[float] = None
+    top_category: Optional[str] = None
 
 
 class MapEventLocation(BaseModel):
@@ -119,6 +126,10 @@ class ValyuEventResponse(BaseModel):
     severity_index: Optional[float] = None
     risk_score: Optional[float] = None
     event_count: Optional[int] = None
+    # ML-enriched fields
+    category_confidence: Optional[float] = None
+    sentiment_polarity: Optional[float] = None
+    entities: Optional[Dict] = None
 
 
 class ConflictSection(BaseModel):
@@ -146,4 +157,35 @@ class CombinedEventsResponse(BaseModel):
     events: List[ValyuEventResponse]
     count: int
     sources: Dict[str, int] = {}
+
+
+# ── Analytics schemas ────────────────────────────────────────────────────
+
+class RiskDistributionResponse(BaseModel):
+    bins: List[Dict]  # [{range: "0-20", count: 15}, ...]
+    stats: Dict  # {mean, median, std, min, max}
+
+class RiskTiersResponse(BaseModel):
+    method: str
+    boundaries: List[float]
+    tier_ranges: Dict[str, List[float]]
+    n_samples: int
+    fitted_at: Optional[str] = None
+
+class CategoryBreakdownResponse(BaseModel):
+    categories: List[Dict]  # [{name, count, percentage}, ...]
+    total: int
+
+class SparklineResponse(BaseModel):
+    country: str
+    dates: List[str]
+    values: List[Optional[float]]
+
+class DecompositionResponse(BaseModel):
+    country: str
+    dates: List[str]
+    trend: List[Optional[float]]
+    seasonal: List[Optional[float]]
+    residual: List[Optional[float]]
+    seasonal_strength: float
 

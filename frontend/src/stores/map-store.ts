@@ -35,6 +35,7 @@ interface MapStore {
   selectedCountryCode: string | null;
   setSelectedCountryCode: (code: string | null) => void;
   flyTo: (lon: number, lat: number, zoom?: number) => void;
+  resetMapState: () => void;
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -55,4 +56,12 @@ export const useMapStore = create<MapStore>((set) => ({
   setSelectedCountryCode: (code) => set({ selectedCountryCode: code }),
   flyTo: (longitude, latitude, zoom = 6) =>
     set({ flyToRequest: { longitude, latitude, zoom } }),
+  resetMapState: () =>
+    set({
+      showHeatmap: false,
+      showClusters: true,
+      showMilitaryBases: false,
+      selectedCountryCode: null,
+      flyToRequest: null,
+    }),
 }));

@@ -1,13 +1,19 @@
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from project root and frontend (so VALYU_API_KEY in frontend/.env is available to backend)
+_backend_root = Path(__file__).resolve().parents[1]
+_project_root = _backend_root.parent
+load_dotenv(_project_root / ".env")
+load_dotenv(_project_root / "frontend" / ".env")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .logging_config import setup_logging, logger
 from .db import engine, Base
-from .routes import health, countries, combined, events, metrics, spikes, brief, history, map as map_router, valyu
+from .routes import health, countries, combined, events, metrics, spikes, brief, history, map as map_router, valyu, analytics
 
 
 def create_app() -> FastAPI:
@@ -43,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(history.router)
     app.include_router(map_router.router)
     app.include_router(valyu.router)
+    app.include_router(analytics.router)
 
     return app
 

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
 from .. import valyu_client
+from ..country_centroids import get_centroid
 from ..military_bases_data import MILITARY_BASES
 from ..schemas import (
     CountryConflictsResponse,
@@ -48,6 +49,72 @@ def _threat_from_content(content: str) -> str:
     return "medium"
 
 
+# Common country names (lowercase) -> ISO-2 for inferring location from content
+_COUNTRY_NAME_TO_CODE: Dict[str, str] = {
+    "ukraine": "UA", "russia": "RU", "china": "CN", "israel": "IL", "gaza": "PS",
+    "syria": "SY", "iran": "IR", "iraq": "IQ", "afghanistan": "AF", "yemen": "YE",
+    "libya": "LY", "egypt": "EG", "turkey": "TR", "india": "IN", "pakistan": "PK",
+    "north korea": "KP", "south korea": "KR", "taiwan": "TW", "vietnam": "VN",
+    "united states": "US", "usa": "US", "u.s.": "US", "uk": "GB",
+    "united kingdom": "GB", "france": "FR", "germany": "DE", "poland": "PL",
+    "ethiopia": "ET", "sudan": "SD", "nigeria": "NG", "mali": "ML", "niger": "NE",
+    "myanmar": "MM", "venezuela": "VE", "mexico": "MX", "brazil": "BR",
+}
+
+
+def _infer_country_from_text(text: str) -> Optional[str]:
+    if not text:
+        return None
+    t = (" " + (text or "").lower() + " ")
+    for name, code in _COUNTRY_NAME_TO_CODE.items():
+        if f" {name} " in t or f" {name}," in t or f" {name}." in t:
+            return code
+    return None
+
+
+def _location_for_valyu_item(item: Dict[str, Any], idx: int) -> MapEventLocation:
+    title = (item.get("title") or "")[:100]
+    lat = item.get("latitude") or item.get("lat")
+    lon = item.get("longitude") or item.get("lon")
+    country_code = (item.get("country_code") or item.get("country") or "").strip()
+    if isinstance(country_code, str) and len(country_code) == 2:
+        country_code = country_code.upper()
+    else:
+        country_code = None
+    if lat is not None and lon is not None:
+        try:
+            return MapEventLocation(
+                latitude=float(lat), longitude=float(lon),
+                placeName=title or None, country=country_code,
+            )
+        except (TypeError, ValueError):
+            pass
+    if country_code:
+        centroid = get_centroid(country_code)
+        if centroid:
+            return MapEventLocation(
+                latitude=centroid[0], longitude=centroid[1],
+                placeName=title or None, country=country_code,
+            )
+    text = f"{item.get('title') or ''} {item.get('content') or ''}"[:2000]
+    inferred = _infer_country_from_text(text)
+    if inferred:
+        centroid = get_centroid(inferred)
+        if centroid:
+            return MapEventLocation(
+                latitude=centroid[0], longitude=centroid[1],
+                placeName=title or None, country=inferred,
+            )
+    # Jitter by index so points don't stack at (0,0): spread in a grid
+    row, col = idx // 5, idx % 5
+    jitter_lat = 20.0 + (row - 2) * 4.0
+    jitter_lon = (col - 2) * 8.0
+    return MapEventLocation(
+        latitude=jitter_lat, longitude=jitter_lon,
+        placeName=title or "Location unknown", country=None,
+    )
+
+
 def _normalize_valyu_result(item: Dict[str, Any], idx: int) -> ValyuEventResponse:
     title = item.get("title") or "Untitled"
     url = item.get("url") or ""
@@ -56,6 +123,7 @@ def _normalize_valyu_result(item: Dict[str, Any], idx: int) -> ValyuEventRespons
     pub = item.get("publishedDate")
     ts = pub if pub else datetime.now(timezone.utc).isoformat()
     threat = _threat_from_content(content)
+    location = _location_for_valyu_item(item, idx)
     return ValyuEventResponse(
         id=_event_id(url, title, idx),
         source="valyu",
@@ -63,7 +131,7 @@ def _normalize_valyu_result(item: Dict[str, Any], idx: int) -> ValyuEventRespons
         summary=summary,
         category="news",
         threatLevel=threat,
-        location=MapEventLocation(latitude=0.0, longitude=0.0, placeName=title[:100], country=None),
+        location=location,
         timestamp=ts,
         sourceUrl=url or None,
     )

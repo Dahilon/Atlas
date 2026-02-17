@@ -5,3 +5,17 @@ pydantic
 pandas
 requests
 python-dotenv
+
+# Data Science & ML
+scikit-learn>=1.3.0
+scipy>=1.11.0
+jenkspy>=0.3.0
+joblib>=1.3.0
+
+# NLP
+spacy>=3.7.0
+textblob>=0.18.0
+pycountry>=22.3.0
+
+# Time Series & Stats
+statsmodels>=0.14.0

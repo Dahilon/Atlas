@@ -132,38 +132,38 @@ export default function ThreatMap({
           clusterRadius={50}
         >
           {showClusters && (
-            <>
-              <Layer
-                id="clusters"
-                type="circle"
-                filter={['has', 'point_count']}
-                paint={{
-                  'circle-color': [
-                    'step',
-                    ['get', 'point_count'],
-                    threatLevelColors.low,
-                    10,
-                    threatLevelColors.medium,
-                    30,
-                    threatLevelColors.high,
-                    100,
-                    threatLevelColors.critical,
-                  ],
-                  'circle-radius': ['step', ['get', 'point_count'], 12, 10, 16, 30, 20, 100, 24],
-                }}
-              />
-              <Layer
-                id="cluster-count"
-                type="symbol"
-                filter={['has', 'point_count']}
-                layout={{
-                  'text-field': ['get', 'point_count_abbreviated'],
-                  'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                  'text-size': 12,
-                }}
-                paint={{ 'text-color': '#fff' }}
-              />
-            </>
+            <Layer
+              id="clusters"
+              type="circle"
+              filter={['has', 'point_count']}
+              paint={{
+                'circle-color': [
+                  'step',
+                  ['get', 'point_count'],
+                  threatLevelColors.low,
+                  10,
+                  threatLevelColors.medium,
+                  30,
+                  threatLevelColors.high,
+                  100,
+                  threatLevelColors.critical,
+                ],
+                'circle-radius': ['step', ['get', 'point_count'], 12, 10, 16, 30, 20, 100, 24],
+              }}
+            />
+          )}
+          {showClusters && (
+            <Layer
+              id="cluster-count"
+              type="symbol"
+              filter={['has', 'point_count']}
+              layout={{
+                'text-field': ['get', 'point_count_abbreviated'],
+                'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                'text-size': 12,
+              }}
+              paint={{ 'text-color': '#fff' }}
+            />
           )}
           <Layer
             id="unclustered-point"

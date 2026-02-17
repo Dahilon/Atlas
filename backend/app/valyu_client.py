@@ -55,13 +55,21 @@ def search(
     for item in results:
         date_val = item.get("date") or item.get("publication_date")
         pub = str(date_val) if date_val else None
-        out.append({
+        row = {
             "title": item.get("title") or "Untitled",
             "url": item.get("url") or "",
             "content": item.get("content") if isinstance(item.get("content"), str) else "",
             "publishedDate": pub,
             "source": item.get("source"),
-        })
+        }
+        if item.get("country_code"):
+            row["country_code"] = item.get("country_code")
+        if item.get("country"):
+            row["country"] = item.get("country")
+        for key in ("latitude", "longitude", "lat", "lon"):
+            if item.get(key) is not None:
+                row[key] = item[key]
+        out.append(row)
     return out
 
 

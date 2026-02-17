@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     Column,
     Date,
     DateTime,
@@ -17,24 +18,19 @@ from .db import Base
 
 class Event(Base):
     """
-    Normalized event derived from GDELT daily exports.
-
-    Fields are intentionally conservative for Day 1; we can
-    extend later while keeping this as the canonical schema.
+    Normalized event from GDELT or Valyu sources.
     """
 
     __tablename__ = "events"
 
-    # GDELT's GLOBALEVENTID (string for portability)
     id = Column(String, primary_key=True, index=True)
 
     ts = Column(DateTime, nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
 
-    # ISO-2 country code (primarily ActionGeo_CountryCode)
+    # ISO-2 country code
     country = Column(String(2), nullable=True, index=True)
 
-    # Optional admin region
     admin1 = Column(String, nullable=True)
 
     lat = Column(Float, nullable=True)
@@ -42,14 +38,24 @@ class Event(Base):
 
     event_code = Column(String(4), nullable=True, index=True)
     quad_class = Column(Integer, nullable=True)
-    goldstein = Column(Float, nullable=True)  # GDELT Goldstein scale -10 to +10
+    goldstein = Column(Float, nullable=True)
 
     avg_tone = Column(Float, nullable=True)
 
     source_url = Column(String, nullable=True)
 
-    # High-level human-readable category (taxonomy mapping)
+    # High-level category (taxonomy or ML classified)
     category = Column(String, nullable=True, index=True)
+
+    # ── ML-enriched fields ──
+    source = Column(String(16), nullable=True, default="gdelt")  # "gdelt" | "valyu"
+    title = Column(String, nullable=True)
+    content = Column(String, nullable=True)
+    category_confidence = Column(Float, nullable=True)  # 0-1 ML confidence
+    severity_index = Column(Float, nullable=True)  # 0-100 NLP severity
+    sentiment_score = Column(Float, nullable=True)  # -1 to 1 polarity
+    entities_json = Column(String, nullable=True)  # JSON: {countries, orgs, persons}
+    threat_level = Column(String(16), nullable=True)  # critical/high/medium/low/info
 
 
 class DailyMetric(Base):
@@ -97,6 +103,29 @@ class DailyMetric(Base):
     # Legacy (kept for backward compat; prefer rolling_center / rolling_dispersion)
     rolling_mean = Column(Float, nullable=True)
     rolling_std = Column(Float, nullable=True)
+
+    # ── ML-enriched fields ──
+    risk_tier = Column(String(16), nullable=True)  # critical/high/medium/low/info
+    risk_percentile = Column(Float, nullable=True)  # 0-100
+    avg_sentiment = Column(Float, nullable=True)  # -1 to 1
+
+    # Trend detection
+    trend_7d = Column(String(16), nullable=True)  # rising/stable/falling
+    trend_30d = Column(String(16), nullable=True)
+    trend_slope = Column(Float, nullable=True)
+    trend_confidence = Column(Float, nullable=True)  # R² 0-1
+
+    # Time series decomposition
+    ewma_baseline = Column(Float, nullable=True)
+    ts_trend = Column(Float, nullable=True)
+    ts_seasonal = Column(Float, nullable=True)
+    ts_residual = Column(Float, nullable=True)
+
+    # Multi-method anomaly detection
+    anomaly_score = Column(Float, nullable=True)  # 0-1
+    anomaly_methods = Column(String, nullable=True)  # JSON array
+    cusum_score = Column(Float, nullable=True)
+    is_multivariate_anomaly = Column(Boolean, nullable=True)
 
     __table_args__ = (
         UniqueConstraint("date", "country", "category", name="uq_daily_metrics_key"),
@@ -159,4 +188,21 @@ class RiskSnapshot(Base):
     __table_args__ = (
         UniqueConstraint("snapshot_date", "country", name="uq_risk_snapshots_date_country"),
     )
+
+
+class RiskTierConfig(Base):
+    """
+    Stores K-means/Jenks risk tier boundaries. Recomputed daily.
+    """
+
+    __tablename__ = "risk_tier_config"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    method = Column(String(16), nullable=False)  # "kmeans" | "jenks"
+    tier = Column(String(16), nullable=False)  # critical/high/medium/low/info
+    lower_bound = Column(Float, nullable=False)
+    upper_bound = Column(Float, nullable=False)
+    centroid = Column(Float, nullable=True)
+    n_samples = Column(Integer, nullable=True)
+    created_at = Column(DateTime, nullable=True)
 
