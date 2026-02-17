@@ -1,15 +1,13 @@
-import { useMemo, useCallback, useState, useEffect } from 'react';
-import Map, { Source, Layer, Popup, NavigationControl, ScaleControl } from 'react-map-gl/dist/maplibre.js';
+import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
+import Map, { Source, Layer, Popup, NavigationControl, ScaleControl } from 'react-map-gl/dist/mapbox.js';
 import type { MapEvent, MilitaryBaseItem } from '../api';
 import { useMapStore } from '../stores/map-store';
 import { useEventsStore, applyFiltersToEvents } from '../stores/events-store';
 import { getSeverityValue, threatLevelColors } from '../constants/colors';
 import MapControls from './MapControls';
 import EventPopup from './EventPopup';
-import 'maplibre-gl/dist/maplibre-gl.css';
-
-// Free MapLibre style (no token required)
-const MAP_STYLE = 'https://demotiles.maplibre.org/style.json';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { MAPBOX_TOKEN } from '../config';
 
 function eventsToGeoJSON(events: MapEvent[]) {
   const features = events
@@ -45,15 +43,11 @@ function basesToGeoJSON(bases: MilitaryBaseItem[]) {
   return { type: 'FeatureCollection' as const, features };
 }
 
-interface ThreatMapProps {
-  mapCountries?: Array<{ country: string; lat: number; lon: number; severity_index?: number | null; risk_score?: number | null }>;
+interface MapboxGlobeProps {
   militaryBases?: MilitaryBaseItem[];
-  onSelectCountry?: (country: string) => void;
 }
 
-export default function ThreatMap({
-  militaryBases = [],
-}: ThreatMapProps) {
+export default function MapboxGlobe({ militaryBases = [] }: MapboxGlobeProps) {
   const { viewport, setViewport, showHeatmap, showClusters, showMilitaryBases, flyTo, flyToRequest, setFlyToRequest } = useMapStore();
   const events = useEventsStore((s) => s.events);
   const filters = useEventsStore((s) => s.filters);
@@ -82,11 +76,10 @@ export default function ThreatMap({
           flyTo(evt.lngLat.lng, evt.lngLat.lat, 8);
         }
       } else if (f.layer?.id === 'clusters' && mapRef && props?.cluster_id != null) {
-        const clusterId = props.cluster_id;
         const map = mapRef as { getSource(id: string): { getClusterExpansionZoom?(id: number, cb: (err: Error | null, zoom: number) => void): void } | null; easeTo(options: { center: [number, number]; zoom: number }): void };
         const src = map.getSource('events');
         if (src?.getClusterExpansionZoom) {
-          src.getClusterExpansionZoom(clusterId, (err: Error | null, zoom: number) => {
+          src.getClusterExpansionZoom(props.cluster_id, (err: Error | null, zoom: number) => {
             if (!err && zoom != null && map.easeTo)
               map.easeTo({ center: [evt.lngLat.lng, evt.lngLat.lat], zoom: Math.min(zoom, 14) });
           });
@@ -96,7 +89,31 @@ export default function ThreatMap({
     [filteredEvents, selectEvent, flyTo, mapRef]
   );
 
-  // Programmatic flyTo: when flyToRequest is set, tell the map to fly there (avoids controlled viewState loop)
+  const onLoad = useCallback((e: { target: unknown }) => {
+    const map = e.target as { setProjection?(opts: { type: string }): void };
+    if (typeof map.setProjection === 'function') {
+      map.setProjection({ type: 'globe' });
+    }
+    setMapRef(e.target);
+  }, []);
+
+  // Gentle auto-rotate: update bearing every frame once map is ready
+  const mapInstanceRef = useRef<unknown>(null);
+  useEffect(() => {
+    if (!mapRef) return;
+    mapInstanceRef.current = mapRef;
+    let rafId: number;
+    const tick = () => {
+      const map = mapInstanceRef.current as { getBearing?: () => number; setBearing?: (b: number) => void } | null;
+      if (map?.getBearing && map?.setBearing) {
+        map.setBearing!(map.getBearing!() + 0.06);
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [mapRef]);
+
   useEffect(() => {
     if (!flyToRequest || !mapRef) return;
     const map = mapRef as { flyTo(options: { center: [number, number]; zoom: number }): void };
@@ -106,18 +123,31 @@ export default function ThreatMap({
     setFlyToRequest(null);
   }, [flyToRequest, mapRef, setFlyToRequest]);
 
+  if (!MAPBOX_TOKEN) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center rounded-xl border border-slate-700 bg-slate-900/50">
+        <div className="text-center text-slate-400">
+          <p className="font-medium">Mapbox token required</p>
+          <p className="mt-1 text-sm">Set VITE_MAPBOX_TOKEN in .env for the 3D globe.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-[70vh] w-full overflow-hidden rounded-xl border border-slate-700">
       <Map
+        mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={{
           longitude: viewport.longitude,
           latitude: viewport.latitude,
           zoom: viewport.zoom,
         }}
         onMove={(e: { viewState: typeof viewport }) => setViewport(e.viewState)}
-        mapStyle={MAP_STYLE}
+        style={{ width: '100%', height: '100%' }}
+        mapStyle="mapbox://styles/mapbox/dark-v11"
         onClick={onMapClick as (e: unknown) => void}
-        onLoad={(e: { target: unknown }) => setMapRef(e.target)}
+        onLoad={onLoad}
         interactiveLayerIds={['clusters', 'unclustered-point']}
       >
         <NavigationControl position="top-right" />
@@ -183,13 +213,7 @@ export default function ThreatMap({
               type="heatmap"
               paint={{
                 'heatmap-weight': ['get', 'severity'],
-                'heatmap-intensity': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  0, 0.5,
-                  9, 1.5,
-                ],
+                'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 0.5, 9, 1.5],
                 'heatmap-color': [
                   'interpolate',
                   ['linear'],

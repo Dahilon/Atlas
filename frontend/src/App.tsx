@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import ThreatMap from './components/ThreatMap';
+import MapboxGlobe from './components/MapboxGlobe';
 import Sidebar from './components/Sidebar';
 import MoversTable from './components/MoversTable';
 import CountryDrilldown from './components/CountryDrilldown';
@@ -160,11 +160,7 @@ export default function App() {
               {mapLoading && (
                 <p className="mb-2 text-slate-400">Loading map data…</p>
               )}
-              <ThreatMap
-                mapCountries={mapData}
-                militaryBases={militaryBases}
-                onSelectCountry={(c) => { setSelectedCountry(c); setTab('drilldown'); }}
-              />
+              <MapboxGlobe militaryBases={militaryBases} />
             </div>
             <Sidebar />
           </div>

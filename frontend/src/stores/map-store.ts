@@ -15,9 +15,17 @@ const defaultViewport: ViewportState = {
   zoom: 2,
 };
 
+export interface FlyToRequest {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+}
+
 interface MapStore {
   viewport: ViewportState;
   setViewport: (v: Partial<ViewportState>) => void;
+  flyToRequest: FlyToRequest | null;
+  setFlyToRequest: (r: FlyToRequest | null) => void;
   showHeatmap: boolean;
   showClusters: boolean;
   showMilitaryBases: boolean;
@@ -35,6 +43,8 @@ export const useMapStore = create<MapStore>((set) => ({
     set((s) => ({
       viewport: { ...s.viewport, ...v },
     })),
+  flyToRequest: null,
+  setFlyToRequest: (r) => set({ flyToRequest: r }),
   showHeatmap: false,
   showClusters: true,
   showMilitaryBases: false,
@@ -44,7 +54,5 @@ export const useMapStore = create<MapStore>((set) => ({
   selectedCountryCode: null,
   setSelectedCountryCode: (code) => set({ selectedCountryCode: code }),
   flyTo: (longitude, latitude, zoom = 6) =>
-    set((s) => ({
-      viewport: { ...s.viewport, longitude, latitude, zoom },
-    })),
+    set({ flyToRequest: { longitude, latitude, zoom } }),
 }));
