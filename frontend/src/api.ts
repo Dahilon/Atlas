@@ -260,3 +260,50 @@ export async function getSparklines(countries: string[]): Promise<SparklineData[
 export async function getTopMovers(limit?: number): Promise<TopMover[]> {
   return fetchApi<TopMover[]>('/analytics/top-movers', limit ? { limit: String(limit) } : undefined);
 }
+
+// --- Country Insights API ---
+
+export interface CountryInsightsEvent {
+  id: string;
+  title: string;
+  category: string | null;
+  threat_level: string;
+  severity: number | null;
+  sentiment: number | null;
+  date: string;
+  source_url: string | null;
+  entities: Record<string, unknown> | null;
+}
+
+export interface CountryInsightsNews {
+  title: string;
+  url: string;
+  date: string | null;
+  source: string | null;
+  category: string | null;
+  confidence: number | null;
+  severity: number | null;
+  threat_level: string | null;
+}
+
+export interface CountryInsights {
+  country: string;
+  country_name: string;
+  summary: {
+    risk_tier: string;
+    severity: number;
+    trend: string;
+    event_count: number;
+    avg_sentiment: number | null;
+  };
+  risk_context: string;
+  recent_events: CountryInsightsEvent[];
+  recent_news: CountryInsightsNews[];
+  category_breakdown: Record<string, number>;
+  related_countries: string[];
+  metrics_history: Array<{ date: string; severity: number; events: number }>;
+}
+
+export async function getCountryInsights(countryCode: string): Promise<CountryInsights> {
+  return fetchApi<CountryInsights>(`/countries/${encodeURIComponent(countryCode)}/insights`);
+}

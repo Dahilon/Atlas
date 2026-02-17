@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .logging_config import setup_logging, logger
 from .db import engine, Base
-from .routes import health, countries, combined, events, metrics, spikes, brief, history, map as map_router, valyu, analytics
+from .routes import health, countries, combined, events, metrics, spikes, brief, history, map as map_router, valyu, analytics, country_insights
 
 
 def create_app() -> FastAPI:
@@ -50,6 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(map_router.router)
     app.include_router(valyu.router)
     app.include_router(analytics.router)
+    app.include_router(country_insights.router)
 
     return app
 

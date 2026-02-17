@@ -27,7 +27,7 @@ export default function MapControls({ onClearAll }: MapControlsProps) {
   };
 
   return (
-    <div className="absolute right-14 top-3 z-10 flex flex-col gap-2 rounded-xl glass px-3 py-2.5 shadow-lg">
+    <div className="absolute right-14 top-14 z-10 flex flex-col gap-2 rounded-xl glass px-3 py-2.5 shadow-lg">
       <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
         <input
           type="checkbox"
