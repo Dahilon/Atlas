@@ -107,8 +107,8 @@ def classify_by_keywords(text: str) -> Tuple[str, float]:
 
 def _generate_training_data() -> Tuple[List[str], List[str]]:
     """
-    Generate synthetic labeled text samples for each category.
-    Used when no GDELT data is available in the database.
+    Generate labeled text samples for each category.
+    Expanded with realistic headlines based on real-world event patterns.
     """
     data = {
         "Armed Conflict": [
@@ -132,6 +132,22 @@ def _generate_training_data() -> Tuple[List[str], List[str]]:
             "Armed conflict displaces millions as humanitarian crisis deepens",
             "Invasion forces capture strategic airfield after heavy fighting",
             "Counter-offensive recaptures territory lost in earlier battles",
+            # Real-world pattern examples
+            "Russian forces shell Ukrainian city killing civilians in residential areas",
+            "Israel launches military operation in Gaza amid rocket attacks from Hamas",
+            "Sudan army clashes with paramilitary RSF forces in Khartoum streets",
+            "Myanmar junta airstrikes hit civilian villages in rebel-held territory",
+            "Yemen Houthi rebels launch missile attacks on Saudi coalition positions",
+            "Ethiopian troops advance into Tigray region as conflict escalates",
+            "Iran-backed militia launches drone attack on US base in Iraq",
+            "North Korea conducts live fire drills near demilitarized zone border",
+            "Syrian government forces barrel bomb rebel-held Idlib province",
+            "Separatist forces seize territory in eastern Ukraine after heavy fighting",
+            "NATO allies conduct joint military exercises near Russian border",
+            "US military deploys aircraft carrier group to Persian Gulf amid Iran tensions",
+            "Cross-border shelling between India and Pakistan along Line of Control",
+            "Armed groups ambush peacekeeping convoy in central Africa killing soldiers",
+            "Chinese military aircraft enter Taiwan air defense zone in show of force",
         ],
         "Crime / Terror": [
             "Terrorist organization claims responsibility for bombing at market square",
@@ -154,6 +170,22 @@ def _generate_training_data() -> Tuple[List[str], List[str]]:
             "Cyber criminals launch ransomware attack on critical government systems",
             "Lone wolf attacker wounds several people in knife attack at station",
             "Piracy incidents increase along major international shipping routes",
+            # Real-world pattern examples
+            "ISIS claims responsibility for suicide bombing at mosque killing worshippers",
+            "Boko Haram kidnaps schoolchildren in northeast Nigeria raid",
+            "Al-Shabaab militants storm hotel in Mogadishu in deadly siege",
+            "Mexican cartel gunmen massacre civilians in border town attack",
+            "Taliban-linked bombing targets government ministry in Kabul",
+            "Al-Qaeda affiliate claims deadly attack on French forces in Sahel",
+            "Hezbollah operatives arrested planning attacks on foreign soil",
+            "PKK militants attack Turkish military outpost killing several soldiers",
+            "Somali pirates hijack commercial vessel in Indian Ocean shipping lane",
+            "Narco-terrorism threat rises as cartels deploy explosive devices",
+            "Jihadist cell disrupted in European capital planning coordinated attacks",
+            "Prison break by armed militants frees hundreds of inmates in Nigeria",
+            "Vehicle ramming attack at crowded festival injures dozens of people",
+            "Separatist guerrilla group bombs oil pipeline in restive region",
+            "Terror financing network exposed funneling millions through crypto",
         ],
         "Civil Unrest": [
             "Thousands take to the streets in anti-government protest demanding reforms",
@@ -176,6 +208,22 @@ def _generate_training_data() -> Tuple[List[str], List[str]]:
             "Anti-corruption protests draw record crowds to the capital plaza",
             "Youth uprising challenges decades of political establishment control",
             "Demonstrators block major highways disrupting commerce and transport",
+            # Real-world pattern examples
+            "Iran protests spread nationwide as security forces open fire on crowds",
+            "Hong Kong pro-democracy activists arrested under national security law",
+            "French Yellow Vest protests paralyze Paris with barricades and tear gas",
+            "Sri Lanka economic crisis sparks mass protests and storming of palace",
+            "Myanmar anti-coup protesters face brutal military crackdown killing hundreds",
+            "Sudanese civilians march demanding return to civilian government",
+            "Thai pro-democracy protesters defy ban and rally at government house",
+            "Chilean unrest over inequality leads to constitutional referendum",
+            "Belarus opposition protests after disputed election meet police violence",
+            "Nigerian EndSARS protesters clash with security forces across Lagos",
+            "Peruvian political crisis triggers nationwide protests and road blocks",
+            "Colombian farmers blockade highways protesting agricultural policies",
+            "Tunisian president faces mass rallies calling for democratic reforms",
+            "Bangladesh garment workers strike demanding higher minimum wages",
+            "South African riots and looting spread following political arrest",
         ],
         "Diplomacy / Sanctions": [
             "United Nations Security Council votes on new sanctions against regime",
@@ -198,6 +246,22 @@ def _generate_training_data() -> Tuple[List[str], List[str]]:
             "Economic sanctions devastate national currency and trade sector",
             "Peace accord signed ending decades of hostility between neighbors",
             "Consulate closure signals further deterioration in foreign relations",
+            # Real-world pattern examples
+            "US imposes sweeping sanctions on Iran nuclear program and IRGC officials",
+            "EU expands Russia sanctions targeting energy sector and oligarchs",
+            "China and US trade talks collapse over Taiwan and technology disputes",
+            "JCPOA nuclear deal negotiations stall as Iran enriches uranium further",
+            "UN General Assembly condemns Russian invasion and demands withdrawal",
+            "North Korea sanctions tightened after latest ballistic missile test",
+            "G7 leaders agree coordinated sanctions response to authoritarian aggression",
+            "India and Pakistan hold backchannel diplomatic talks on Kashmir dispute",
+            "Middle East peace summit brings together Arab leaders and Israeli officials",
+            "African Union mediates ceasefire between warring Ethiopian factions",
+            "BRICS nations challenge western sanctions with alternative payment systems",
+            "US State Department issues travel advisory warning against visiting Syria",
+            "International Criminal Court issues arrest warrant for head of state",
+            "Arms embargo imposed on conflict zone by UN Security Council resolution",
+            "Diplomatic freeze between neighbors as territorial waters dispute escalates",
         ],
         "Economic Disruption": [
             "Currency collapses as central bank fails to contain financial crisis",
@@ -220,6 +284,22 @@ def _generate_training_data() -> Tuple[List[str], List[str]]:
             "Economic recession deepens with GDP contracting for third quarter",
             "Market volatility increases as geopolitical tensions unsettle investors",
             "Export ban on critical minerals disrupts global technology manufacturing",
+            # Real-world pattern examples
+            "Lebanon economic collapse leaves millions in poverty as banks freeze deposits",
+            "Turkey lira crashes to record low amid unconventional monetary policy",
+            "Argentina seeks IMF bailout as peso plummets and inflation hits 100 percent",
+            "Sri Lanka runs out of foreign reserves unable to pay for fuel and food imports",
+            "Global food prices surge as Ukraine war disrupts grain exports",
+            "China property sector crisis deepens as major developers default on debt",
+            "Houthi attacks on Red Sea shipping disrupt global trade routes",
+            "Venezuela hyperinflation forces millions to flee as economy collapses",
+            "Pakistan faces balance of payments crisis with dwindling forex reserves",
+            "European energy crisis worsens as Russia cuts natural gas supplies",
+            "Global semiconductor shortage cripples auto and tech industries",
+            "Zambia becomes first pandemic-era sovereign default in Africa",
+            "Egyptian pound devaluation triggers price surge on imported goods",
+            "Nigerian economy contracts as oil revenues decline amid OPEC cuts",
+            "Global shipping costs spike tenfold amid port congestion and demand",
         ],
         "Infrastructure / Energy": [
             "Cyberattack targets national power grid causing widespread blackouts",
@@ -242,6 +322,22 @@ def _generate_training_data() -> Tuple[List[str], List[str]]:
             "Mining disaster traps workers underground as rescue operations begin",
             "Airport runway damage from attack grounds all flights indefinitely",
             "Industrial accident at chemical plant releases toxic fumes over city",
+            # Real-world pattern examples
+            "Colonial Pipeline ransomware attack shuts down fuel supply to US east coast",
+            "Nord Stream pipeline explosions suspected sabotage disrupt European gas supply",
+            "Ukraine power grid targeted by Russian missile strikes leaving millions dark",
+            "Saudi Aramco oil facilities attacked by drone swarm cutting global supply",
+            "Zaporizhzhia nuclear plant shelling raises fears of radiation disaster",
+            "Houthi attacks damage undersea internet cables in Red Sea corridor",
+            "Iran-linked hackers target water treatment systems in multiple countries",
+            "Earthquake damages critical infrastructure and collapses buildings",
+            "Suez Canal blocked by container ship disrupting global shipping for weeks",
+            "Chinese hackers breach US critical infrastructure including power grids",
+            "Attacks on electrical transformers cause cascading grid failures",
+            "Major port explosion devastates Beirut destroying surrounding neighborhoods",
+            "Wildfire destroys power transmission lines causing statewide blackout",
+            "Flooding damages roads bridges and water systems across the region",
+            "Terror group threatens to contaminate water supply of major city",
         ],
     }
 

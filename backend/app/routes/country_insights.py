@@ -205,7 +205,7 @@ def get_country_insights(
                     ensure_model_trained()
                     text = f"{item.get('title', '')} {item.get('content', '')[:500]}"
                     cat, conf, _ = classify_event(text)
-                    sev = score_severity(text, cat, 0, None)
+                    sev = score_severity(text, cat, 0, None, country_code=code)
                     news_entry["category"] = cat
                     news_entry["confidence"] = round(conf, 2)
                     news_entry["severity"] = round(sev.get("severity_index", 0), 1)

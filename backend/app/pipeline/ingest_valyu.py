@@ -31,18 +31,45 @@ logger = logging.getLogger(__name__)
 
 # Diverse threat queries for broad coverage
 INGESTION_QUERIES = [
-    "armed conflict military operations war",
-    "terrorism attack bombing security threat",
-    "protest demonstration civil unrest riot",
-    "sanctions diplomacy international relations treaty",
-    "economic crisis recession market crash inflation",
-    "infrastructure attack pipeline cyberattack power grid",
-    "missile strike drone attack shelling",
-    "coup revolution political crisis regime change",
-    "refugee crisis humanitarian emergency displacement",
-    "nuclear threat ballistic missile weapons proliferation",
+    # Core conflict
+    "armed conflict military operations war casualties",
+    "terrorism attack bombing security threat explosion",
+    "missile strike drone attack shelling airstrike",
     "border conflict territorial dispute military buildup",
-    "extremism radicalization insurgency guerrilla",
+    # Civil & political
+    "protest demonstration civil unrest riot crackdown",
+    "coup revolution political crisis regime change",
+    "election violence disputed results martial law",
+    # Diplomacy & sanctions
+    "sanctions diplomacy international relations embargo",
+    "nuclear threat ballistic missile weapons proliferation",
+    # Economic
+    "economic crisis recession market crash inflation collapse",
+    "currency collapse debt default food crisis famine",
+    # Infrastructure
+    "infrastructure attack pipeline cyberattack power grid sabotage",
+    # Humanitarian
+    "refugee crisis humanitarian emergency displacement",
+    "extremism radicalization insurgency guerrilla militia",
+    # Region-specific high-priority
+    "Ukraine Russia war frontline offensive",
+    "Gaza Israel military operation humanitarian",
+    "Sudan civil war RSF army Khartoum",
+    "Myanmar junta resistance armed conflict",
+    "Yemen Houthi attack Red Sea shipping",
+    "Iran nuclear sanctions military proxy",
+    "North Korea missile test provocations",
+    "Sahel insurgency Mali Burkina Niger",
+    "Syria conflict reconstruction instability",
+    "Haiti gang violence security crisis",
+    "Somalia Al-Shabaab attack security forces",
+    "Ethiopia Tigray Amhara conflict",
+    "DRC Congo M23 rebel armed group",
+    "Afghanistan Taliban ISIS security",
+    "Lebanon Hezbollah economic collapse",
+    "Pakistan terrorism TTP border attacks",
+    "Nigeria Boko Haram banditry kidnapping",
+    "Libya militia conflict political division",
 ]
 
 
@@ -104,15 +131,7 @@ def fetch_and_classify(
         # 2. Category classification
         category, cat_confidence, cat_probs = classify_event(text)
 
-        # 3. Severity scoring
-        severity = score_severity(
-            text,
-            category=category,
-            entity_count=len(entities.countries) + len(entities.organizations),
-            published_date=published,
-        )
-
-        # 4. Determine country
+        # 3. Determine country (before severity, so we can pass it)
         country_code = None
         # Try Valyu-provided country first
         for key in ("country_code", "country"):
@@ -124,7 +143,16 @@ def fetch_and_classify(
         if not country_code and entities.primary_country:
             country_code = entities.primary_country
 
-        # 5. Determine coordinates
+        # 4. Severity scoring (now with country context for geopolitical boost)
+        severity = score_severity(
+            text,
+            category=category,
+            entity_count=len(entities.countries) + len(entities.organizations),
+            published_date=published,
+            country_code=country_code,
+        )
+
+        # 5. Determine coordinates (was step 5, kept numbering)
         lat = item.get("latitude") or item.get("lat")
         lon = item.get("longitude") or item.get("lon")
         if (lat is None or lon is None) and country_code:

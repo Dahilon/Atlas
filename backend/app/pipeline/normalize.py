@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Event
 from ..taxonomy import map_event_to_category
+from ..ml.severity_scorer import score_severity
 
 logger = logging.getLogger("events-risk-dashboard.normalize")
 
@@ -156,6 +157,23 @@ def normalize_zip_to_events(zip_path: Path, session: Session) -> int:
 
             category = map_event_to_category(event_code, quad_class, goldstein)
 
+            # Compute severity using GDELT structured signals
+            # GDELT events don't have text, but have goldstein, quad_class, avg_tone
+            # Build a minimal text from available data for keyword matching
+            severity_text = f"{category or ''} event"
+            severity = score_severity(
+                severity_text,
+                category=category or "Civil Unrest",
+                entity_count=0,
+                published_date=dt.strftime("%Y-%m-%d") if dt else None,
+                country_code=country,
+                goldstein_scale=goldstein,
+                quad_class=quad_class,
+            )
+            severity_index = severity["severity_index"]
+            threat_level = severity["threat_level"]
+            sentiment_polarity = severity["sentiment_polarity"]
+
             # Idempotent upsert: update if exists, else insert
             existing: Optional[Event] = session.get(Event, event_id)
             if existing:
@@ -171,6 +189,9 @@ def normalize_zip_to_events(zip_path: Path, session: Session) -> int:
                 existing.avg_tone = avg_tone
                 existing.source_url = source_url
                 existing.category = category
+                existing.severity_index = severity_index
+                existing.threat_level = threat_level
+                existing.sentiment_score = sentiment_polarity
             else:
                 event = Event(
                     id=event_id,
@@ -186,6 +207,9 @@ def normalize_zip_to_events(zip_path: Path, session: Session) -> int:
                     avg_tone=avg_tone,
                     source_url=source_url,
                     category=category,
+                    severity_index=severity_index,
+                    threat_level=threat_level,
+                    sentiment_score=sentiment_polarity,
                 )
                 session.add(event)
                 inserted += 1
