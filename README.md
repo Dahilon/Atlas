@@ -1,44 +1,237 @@
 # Global Events Risk Intelligence Dashboard
 
-OSINT dashboard: GDELT event data → normalized schema → daily metrics → API + React dashboard (map, movers, drilldown, brief, evidence).
+A real-time geopolitical risk dashboard that aggregates conflict and crisis events from public sources, applies natural language processing and machine learning to assess severity and threat, and visualizes global risk across an interactive 3D map.
 
-## Structure
+**👉 [Start here: Full technical overview](docs/PROJECT_OVERVIEW.md)** – What the system does, how it works end-to-end, data science methods, and talking points for interviews.
 
-- **backend/** – Python 3.11+, FastAPI, SQLAlchemy, SQLite. API, pipeline (ingest, normalize, aggregate, risk/spikes). Tests and deps live here.
-- **frontend/** – React, TypeScript, Parcel, Tailwind. Map, event feed, movers table, country drilldown, brief, evidence panel.
-- **docs/** – Design, schema, taxonomy, roadmaps (local only; not pushed).
+## What it does
 
-## Run locally
+- **Live global risk map** – Interactive Mapbox 3D globe color-coded by risk tier (critical/high/medium/low/info)
+- **Event intelligence** – Real-time event feed with severity scores, classification (armed conflict, civil unrest, terrorism, etc.), and sentiment analysis
+- **Risk scoring** – ML-powered severity assessment using NLP, geopolitical context, and structured signals; baseline anomaly detection for spikes
+- **Country deep-dives** – Click any country to see recent events, news, risk trends, risk context, and related countries
+- **Analytics & movers** – Track which countries are rising/falling in risk tier, risk distribution histograms, category breakdowns
+- **Data sources** – GDELT (open event archive, no auth) + Valyu (premium conflict intelligence API with keyword filtering and expert curation)
 
-**Backend**
+## Tech stack
+
+| Backend | Frontend |
+|---------|----------|
+| Python 3.11+ | React 19, TypeScript |
+| FastAPI (REST API) | Mapbox GL (3D globe) |
+| SQLAlchemy + SQLite | Recharts (analytics) |
+| scikit-learn + spaCy (ML/NLP) | Zustand (state management) |
+| pandas, scipy, statsmodels | Tailwind CSS, Parcel (bundler) |
+
+## Data sources
+
+- **GDELT** – Public event database (15M+ events, daily updates). No authentication required. Data flow: CSV → normalize → daily metrics → API.
+- **Valyu** – Premium conflict intelligence (curated events, keyword filtering, expert classification). Requires API key. Data flow: REST API → normalize → same pipeline.
+
+Both sources feed the same ML pipeline (severity scoring, entity extraction, event classification, anomaly detection, trend analysis).
+
+## Getting started
+
+### Prerequisites
+
+- **Node.js** 18+ (for frontend)
+- **Python** 3.11+ (for backend)
+- **API keys:**
+  - `MAPBOX_TOKEN` – Get free at https://account.mapbox.com/ (required for 3D map)
+  - `VALYU_API_KEY` – Request at https://valyu.network/ (required for live event data; optional if you only want GDELT)
+
+### 1. Clone and set up backend
 
 ```bash
-# From repo root
+# Clone repo
+git clone <repo-url>
+cd "Global Events Risk Intelligence Dashboard"
+
+# Create Python virtual environment
 python -m venv .venv
-source .venv/bin/activate   # or .venv\Scripts\activate on Windows
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
 pip install -r backend/requirements.txt
-python -m backend.app.pipeline.run_day1 --days 14   # optional: load data
-python -m backend.app.pipeline.run_day2             # optional: baselines + spikes
-uvicorn backend.app.main:app --reload
+
+# (Optional) Load historical data from GDELT
+python -m backend.app.pipeline.run_day1 --days 14
+
+# (Optional) Compute risk scores and detect anomalies
+python -m backend.app.pipeline.run_day2
+
+# Start backend API
+./run-backend.sh
+# API runs at http://localhost:8000
+# Swagger docs at http://localhost:8000/docs
 ```
 
-API: http://localhost:8000 — Docs: http://localhost:8000/docs
-
-**Frontend**
+### 2. Set up and run frontend
 
 ```bash
 cd frontend
+
+# Install dependencies
 npm install --legacy-peer-deps
-cp .env.example .env   # set API_URL=http://localhost:8000, optional MAPBOX_TOKEN
+
+# Set up environment
+cp .env.example .env
+
+# Edit .env and fill in:
+# - API_URL=http://localhost:8000 (or your backend URL)
+# - MAPBOX_TOKEN=your_token_here
+# - VALYU_API_KEY=your_key_here (if you have it)
+
+# Start dev server
 npm run dev
+# App runs at http://localhost:1234
 ```
 
-App: http://localhost:1234 (Parcel default). It uses `API_URL` from `.env` to talk to the API.
+### 3. Live data ingestion (optional)
 
-## Tests
-
-From repo root:
+The dashboard ships with historical data. To continuously pull fresh events:
 
 ```bash
-python -m pytest backend/tests/ -v
+# From project root:
+python -m backend.app.pipeline.run_live
+
+# Or trigger via the API:
+curl -X POST http://localhost:8000/pipeline/run-valyu
 ```
+
+---
+
+## Project structure
+
+```
+Global Events Risk Intelligence Dashboard/
+├── backend/                    # FastAPI + ML pipeline
+│   ├── app/
+│   │   ├── main.py            # App factory, router registration
+│   │   ├── db.py              # SQLAlchemy engine
+│   │   ├── models.py          # ORM (Event, DailyMetric, Spike, RiskSnapshot)
+│   │   ├── ml/                # 7 ML modules
+│   │   │   ├── severity_scorer.py     # NLP severity 0–100
+│   │   │   ├── event_classifier.py    # Predict event category
+│   │   │   ├── risk_classifier.py     # Map severity → risk tier
+│   │   │   ├── entity_extractor.py    # Extract people/places/orgs
+│   │   │   ├── trend_detector.py      # 7d/30d trend (up/down/stable)
+│   │   │   ├── anomaly_detection.py   # Detect spikes
+│   │   │   └── time_series.py         # EWMA, STL decomposition
+│   │   ├── pipeline/          # ETL pipeline
+│   │   │   ├── ingest_gdelt.py        # Fetch GDELT CSV
+│   │   │   ├── ingest_valyu.py        # Fetch Valyu REST API
+│   │   │   ├── normalize.py           # Standardize → ORM rows
+│   │   │   ├── aggregate_daily.py     # Group by country/date → metrics
+│   │   │   ├── day2_baselines_risk.py # Baselines, z-scores, risk
+│   │   │   └── run_live.py            # Orchestrate live ingest
+│   │   └── routes/            # 13 REST endpoints (map, events, metrics, etc.)
+│   ├── requirements.txt        # Python dependencies
+│   └── tests/
+│
+├── frontend/                   # React + TypeScript + Mapbox GL
+│   ├── src/
+│   │   ├── App.tsx            # Root component, tab routing
+│   │   ├── api.ts             # All HTTP calls + TypeScript types
+│   │   ├── components/        # 15+ React components (map, sidebar, panels, etc.)
+│   │   │   ├── MapboxGlobe.tsx   # 3D globe, auto-rotate, click/hover
+│   │   │   ├── CountryPanel.tsx  # Slide-in: context, metrics, events, news
+│   │   │   ├── EventCard.tsx     # Event display in feed
+│   │   │   └── ...
+│   │   └── stores/            # Zustand state (selected country, filters)
+│   ├── index.html             # Entry point
+│   ├── .env.example           # Env template
+│   └── package.json
+│
+├── docs/                      # Design documents, schema, roadmaps
+├── migrations/                # Database migrations
+├── run-backend.sh             # Start backend with hot-reload
+└── README.md                  # This file
+```
+
+---
+
+## ML pipeline explained
+
+The data flows through a two-phase pipeline:
+
+### Phase 1: Ingest + Normalize
+Raw events (GDELT CSV or Valyu API) → standardized ORM `Event` rows → `DailyMetric` aggregates by country/date.
+
+### Phase 2: Risk Scoring
+1. **Severity scoring** – NLP analyzes event text for keywords, sentiment, and geopolitical context. Outputs 0–100 score.
+2. **Event classification** – ML classifies event into 1 of 12 categories (armed conflict, civil unrest, terrorism, crime, diplomatic incident, etc.)
+3. **Entity extraction** – Identifies people, places, organizations mentioned (military bases, key actors, etc.)
+4. **Risk tier mapping** – Converts severity score to tier (info / low / medium / high / critical) using Jenks natural breaks + real-world anchors.
+5. **Anomaly detection** – Detects spikes: events ≥2 std deviations above rolling baseline.
+6. **Trend detection** – Calculates 7-day and 30-day trend direction (up / down / stable) using slope analysis.
+
+All metrics (severity, tier, trend, spike status, top category) are cached in `daily_metrics` for fast API response.
+
+---
+
+## API endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /health` | Liveness check |
+| `GET /map` | All countries with lat/lon, risk tier, severity, event count |
+| `GET /countries/{code}/insights` | Deep dive: recent events, news, risk context, related countries |
+| `GET /events` | Event feed with filters |
+| `GET /metrics` | Country risk metrics and trends |
+| `GET /spikes` | Anomalies (events > 2σ above baseline) |
+| `GET /brief` | Daily summary by date |
+| `GET /analytics/*` | Risk distribution, tier breakdowns, sparklines, movers |
+| `POST /pipeline/run-valyu` | Trigger fresh Valyu ingest |
+| `POST /pipeline/re-enrich` | Re-score all existing events (useful after ML updates) |
+
+Full docs: http://localhost:8000/docs (after backend starts)
+
+---
+
+## Running tests
+
+```bash
+pytest backend/tests/ -v
+```
+
+---
+
+## Building for production
+
+**Backend** – Deploy the `backend/` folder as a FastAPI app. SQLite is fine for small-to-medium scale; swap to PostgreSQL if needed.
+
+**Frontend** – Build and deploy the `frontend/dist/` folder:
+```bash
+cd frontend
+npm run build
+# dist/ folder ready for static hosting (Vercel, Netlify, S3, etc.)
+```
+
+---
+
+## Why this exists
+
+Geopolitical risk intelligence is expensive and fragmented. This project demonstrates:
+- How to stitch together multiple data sources into a unified feed
+- How to apply NLP/ML to increase signal-to-noise (severity scoring, anomaly detection)
+- How to build a fast, interactive dashboard at scale (Mapbox 3D, real-time filtering, caching)
+- That open data (GDELT) + smart processing beats proprietary blobs
+
+---
+
+## Notes
+
+- **No AI disclaimer needed** – This is a data pipeline + visualization. No LLMs or generative models.
+- **Transparency** – All scoring logic is deterministic and auditable (see `backend/app/ml/` for equations).
+- **Reproducibility** – Running the pipeline again produces the same results (deterministic, no randomness in production).
+
+---
+
+## License
+
+[Add license here]
+
+## Contact
+
+[Add contact info here]

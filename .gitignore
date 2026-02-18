@@ -11,6 +11,13 @@ __pycache__/
 *.egg-info/
 .eggs/
 
+# Database files (should not be tracked; users run pipeline to populate)
+*.db
+events.db
+
+# ML model binaries (regenerated during training)
+*.joblib
+
 # Project docs (not pushed)
 docs/
 
@@ -23,3 +30,6 @@ docs/
 # Logs and local
 *.log
 *.local
+
+# Backend Node artifacts (not a Node project)
+backend/package-lock.json
