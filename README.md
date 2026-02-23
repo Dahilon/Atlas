@@ -40,6 +40,19 @@ Both sources feed the same ML pipeline (severity scoring, entity extraction, eve
   - `MAPBOX_TOKEN` – Get free at https://account.mapbox.com/ (required for 3D map)
   - `VALYU_API_KEY` – Request at https://valyu.network/ (required for live event data; optional if you only want GDELT)
 
+### Quick Start (TL;DR)
+
+```bash
+# Terminal 1: Backend
+source .venv/bin/activate  # Or create: python -m venv .venv && source .venv/bin/activate
+./run-backend.sh
+# → API at http://localhost:8000 | Docs at http://localhost:8000/docs
+
+# Terminal 2: Frontend
+cd frontend && npm run dev
+# → App at http://localhost:1234
+```
+
 ### 1. Clone and set up backend
 
 ```bash
@@ -48,7 +61,7 @@ git clone <repo-url>
 cd "Global Events Risk Intelligence Dashboard"
 
 # Create Python virtual environment
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
@@ -60,32 +73,38 @@ python -m backend.app.pipeline.run_day1 --days 14
 # (Optional) Compute risk scores and detect anomalies
 python -m backend.app.pipeline.run_day2
 
-# Start backend API
+# Start backend API (from project root)
 ./run-backend.sh
 # API runs at http://localhost:8000
 # Swagger docs at http://localhost:8000/docs
 ```
+
+**Note:** The backend requires Python 3.11+. If `python` command not found, use `python3`.
 
 ### 2. Set up and run frontend
 
 ```bash
 cd frontend
 
-# Install dependencies
+# Install dependencies (--legacy-peer-deps handles version conflicts)
 npm install --legacy-peer-deps
 
 # Set up environment
 cp .env.example .env
 
-# Edit .env and fill in:
+# Edit .env and fill in your tokens:
+cat .env
 # - API_URL=http://localhost:8000 (or your backend URL)
-# - MAPBOX_TOKEN=your_token_here
-# - VALYU_API_KEY=your_key_here (if you have it)
+# - MAPBOX_TOKEN=your_mapbox_token_here (get free at https://account.mapbox.com/)
+# - VALYU_API_KEY=your_valyu_api_key_here (request at https://valyu.network/ — optional)
 
-# Start dev server
+# Start dev server (from frontend/ directory)
 npm run dev
-# App runs at http://localhost:1234
+# App opens at http://localhost:1234
+# HMR (hot reload) enabled — changes auto-refresh
 ```
+
+**Note on dependencies:** The `--legacy-peer-deps` flag is required due to peer dependency conflicts in mapbox-gl and three.js. This is expected and safe.
 
 ### 3. Live data ingestion (optional)
 
@@ -192,8 +211,22 @@ Full docs: http://localhost:8000/docs (after backend starts)
 ## Running tests
 
 ```bash
+# Backend tests (from project root)
 pytest backend/tests/ -v
 ```
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `python: command not found` | Use `python3` instead (e.g., `python3 -m venv .venv`) |
+| `./run-backend.sh: not found` | Make sure you're in project root, not inside `backend/` folder. Or run: `cd .. && ./run-backend.sh` |
+| Frontend won't load | Check `.env` has `API_URL=http://localhost:8000` and backend is running on port 8000 |
+| No Mapbox token | Map will be blank; get a free token at https://account.mapbox.com/ and add to `frontend/.env` |
+| Port 8000 or 1234 in use | Kill conflicting process or change port in `run-backend.sh` (line 11) and `frontend/package.json` (dev script) |
+| `npm ERR! code ERESOLVE` | This is expected; use `npm install --legacy-peer-deps` as shown above |
 
 ---
 
