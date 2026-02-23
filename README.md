@@ -269,12 +269,3 @@ Geopolitical risk intelligence is expensive and fragmented. This project demonst
 - **Transparency** – All scoring logic is deterministic and auditable (see `backend/app/ml/` for equations).
 - **Reproducibility** – Running the pipeline again produces the same results (deterministic, no randomness in production).
 
----
-
-## License
-
-[Add license here]
-
-## Contact
-
-[Add contact info here]
