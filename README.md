@@ -2,7 +2,7 @@
 
 A real-time geopolitical risk dashboard that aggregates conflict and crisis events from public sources, applies natural language processing and machine learning to assess severity and threat, and visualizes global risk across an interactive 3D map.
 
-**👉 [Start here: Full technical overview](docs/PROJECT_OVERVIEW.md)** – What the system does, how it works end-to-end, data science methods, and talking points for interviews.
+**👉– What the system does, how it works end-to-end, data science methods, and talking points for interviews.
 
 ## What it does
 
